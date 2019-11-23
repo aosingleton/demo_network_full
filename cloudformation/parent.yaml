@@ -1,0 +1,30 @@
+---
+Description: 
+  Formation creates sample network.
+
+  
+Parameters:
+  LatestAmiId:
+    Description: Desired amiID for latest amazon image.
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+  
+  TempEC2KeyPair:
+    Default: astempkeypair
+    Description: Desired keypair for EC2 instance.
+    Type: AWS::EC2::KeyPair::KeyName
+
+  TemplatesNetwork:
+    Description: Location of permissions stack template.
+    Type: String
+
+  
+Resources:
+  DemoProjectNetworkStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Ref TemplatesNetwork
+      Tags:
+        -
+          Key: Name
+          Value: TemplatesNetwork

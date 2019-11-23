@@ -1,0 +1,139 @@
+---
+Parameters:
+  TempEC2KeyPair:
+    Default: ASKeyPair
+    Description: Desired keypair for EC2 instance.
+    Type: AWS::EC2::KeyPair::KeyName
+    
+  LatestAmiId:
+    Description: Desired amiID for latest amazon image.
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+
+
+Resources:
+  # creating base permissions/roles (role, ip, policy)
+  SampleNetworkRole: 
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - 
+            Effect: Allow
+            Action: 'sts:AssumeRole'
+            Principal: 
+              Service: 
+                - 'ec2.amazonaws.com'
+
+  SampleNetworkInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: DashboardProfile
+      Roles:
+        - !Ref SampleNetworkRole
+
+  # confirm that the actions are relevant
+  SampleNetworkDashboardPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: SampleNetworkPolicy
+      PolicyDocument:
+        Statement:
+          - 
+            Effect: Allow
+            Action: 
+              - 's3:*'
+              - 'cloudwatch:*'
+              - 'logs:*'
+              - 'sns:*'
+              - 'iam:GetPolicy'
+              - 'iam:GetPolicyVersion'
+              - 'iam:GetRole'
+            Resource: '*'
+      Roles:
+        - !Ref SampleNetworkRole
+
+  # creating network resources (vpc, subnet, ig, igconnection, ssg, ec2, routetable, routableassociation, s3)
+  SampleNetworkVPC:
+    Type: AWS::EC2::VPC
+    Properties: 
+      CidrBlock: 10.0.0.0/16
+  
+  SampleNetworkSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      VpcId: !Ref SampleNetworkVPC
+      MapPublicIpOnLaunch: True
+
+  SampleNetworkRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref SampleNetworkVPC
+
+  SampleNetworkRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref SampleNetworkRouteTable
+      SubnetId: !Ref SampleNetworkSubnet
+
+  SampleNetworkInternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  SampleNetworkInternetGatewayConnnection:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref SampleNetworkInternetGateway
+      VpcId: !Ref SampleNetworkVPC
+    
+  SampleNetworkS3:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: SampleNetworkbucketfordashboard071619
+
+  # setting network traffic to open
+  SampleNetworkSSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable HTTP, SSH
+      VpcId: !Ref SampleNetworkVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+  SampleNetworkEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: t2.micro
+      KeyName: !Ref TempEC2KeyPair
+      Monitoring: True
+      IamInstanceProfile: !Ref SampleNetworkInstanceProfile
+      NetworkInterfaces: 
+        - DeviceIndex: 0
+          SubnetId: !Ref SampleNetworkSubnet
+          GroupSet:
+            - !Ref SampleNetworkSSG
+
+            
+Outputs:
+  ProjectDashboardEC2:
+    Description:  EC2 output value.
+    Value: !Ref SampleNetworkEC2
+    Export:
+      Name: SampleNetworkEC2ID
