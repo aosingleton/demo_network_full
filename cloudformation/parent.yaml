@@ -1,6 +1,6 @@
 ---
 Description: 
-  Formation creates sample network.
+  Formation creates sample network stack
 
   
 Parameters:

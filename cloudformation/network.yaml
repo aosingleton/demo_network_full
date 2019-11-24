@@ -1,4 +1,8 @@
 ---
+Description:
+  Creates demo network environment.
+
+  
 Parameters:
   TempEC2KeyPair:
     Default: ASKeyPair
@@ -53,7 +57,6 @@ Resources:
       Roles:
         - !Ref SampleNetworkRole
 
-  # creating network resources (vpc, subnet, ig, igconnection, ssg, ec2, routetable, routableassociation, s3)
   SampleNetworkVPC:
     Type: AWS::EC2::VPC
     Properties: 
@@ -85,11 +88,6 @@ Resources:
     Properties:
       InternetGatewayId: !Ref SampleNetworkInternetGateway
       VpcId: !Ref SampleNetworkVPC
-    
-  SampleNetworkS3:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: SampleNetworkbucketfordashboard071619
 
   # setting network traffic to open
   SampleNetworkSSG:
